@@ -1,0 +1,116 @@
+﻿@page "/doctors"
+@using Microsoft.EntityFrameworkCore
+@using Microsoft.AspNetCore.Components.QuickGrid
+@using DjangoModelAdmin.Model
+@using DjangoModelAdmin.Data
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
+@inject ApplicationDbContext context
+@rendermode InteractiveServer
+<PageTitle>Doctors</PageTitle>
+
+<h1 class="text-primary">Doctors</h1>
+<hr />
+
+<p class="d-flex justify-content-end mb-3">
+    <a href="doctors/create" class="btn btn-primary">Create New</a>
+</p>
+
+<!-- Search bar -->
+<div class="mb-3">
+    <input type="text" class="form-control" placeholder="Search by name..." @bind="searchQuery" @oninput="OnSearchChanged" />
+</div>
+
+@if (doctors == null)
+{
+    <div class="text-center">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+        <p class="mt-2">Loading...</p>
+    </div>
+}
+else
+{
+    <QuickGrid TGridItem="Doctors" Class="table table-striped table-hover shadow-sm"
+    Items="filteredDoctors.AsQueryable()"
+    PageSize="pageSize"
+    PageIndex="pageIndex"
+    TotalItems="totalItems"
+    OnPageIndexChanged="OnPageIndexChanged"
+    OnPageSizeChanged="OnPageSizeChanged">
+
+        <PropertyColumn Property="d => d.doc_name" Title="Name" />
+        <PropertyColumn Property="d => d.doc_spec" Title="Specialization" />
+        <PropertyColumn Property="d => d.Department.dep_name" Title="Department" />
+
+        <TemplateColumn Context="d" Title="Action">
+            <div class="btn-group" role="group">
+                <a href="@($"doctors/edit?doc_id={d.doc_id}")" class="btn btn-sm btn-outline-primary">Edit</a>
+                <a href="@($"doctors/details?doc_id={d.doc_id}")" class="btn btn-sm btn-outline-secondary">Details</a>
+                <a href="@($"doctors/delete?doc_id={d.doc_id}")" class="btn btn-sm btn-outline-danger">Delete</a>
+            </div>
+        </TemplateColumn>
+    </QuickGrid>
+}
+
+@code {
+    private List<Doctors> doctors;
+    private List<Doctors> filteredDoctors;
+    private string searchQuery = string.Empty;
+    private int pageSize = 5;
+    private int pageIndex = 0;
+    private int totalItems;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDoctors();
+    }
+
+    private async Task LoadDoctors()
+    {
+        doctors = await context.Doctors
+            .Include(d => d.Department)
+            .ToListAsync();
+
+        totalItems = doctors.Count;
+        FilterDoctors();
+    }
+
+    private void FilterDoctors()
+    {
+        if (string.IsNullOrEmpty(searchQuery))
+        {
+            filteredDoctors = doctors.Skip(pageIndex * pageSize).Take(pageSize).ToList();
+        }
+        else
+        {
+            Console.WriteLine("filter triggered");
+            filteredDoctors = doctors
+                .Where(d => d.doc_name.Contains(searchQuery, StringComparison.OrdinalIgnoreCase))
+                .Skip(pageIndex * pageSize)
+                .Take(pageSize)
+                .ToList();
+        }
+        StateHasChanged();
+    }
+
+    private void OnPageIndexChanged(int newIndex)
+    {
+        pageIndex = newIndex;
+        FilterDoctors();
+    }
+
+    private void OnPageSizeChanged(int newSize)
+    {
+        pageSize = newSize;
+        FilterDoctors();
+    }
+
+    private void OnSearchChanged()
+    {
+        Console.WriteLine("search triggered");
+        pageIndex = 0;  // Reset to the first page when searching
+        FilterDoctors();
+    }
+}

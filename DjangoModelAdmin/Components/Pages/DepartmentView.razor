@@ -1,0 +1,18 @@
+﻿@page "/department"
+@using Layout
+@layout UserLayout
+@using DjangoModelAdmin.Model
+@using DjangoModelAdmin.Data
+@inject ApplicationDbContext context
+
+<h1 class="text-center">Our Department</h1>
+<hr />
+
+@foreach(var item in context.Departments)
+{
+    <div class="mx-auto w-50 bg-success text-center text-white p-3 my-3 border border-warning rounded">
+        <h1>@item.dep_name</h1>
+        <p>@item.dep_description</p>
+    </div>
+
+}

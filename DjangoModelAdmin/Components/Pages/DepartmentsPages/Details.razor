@@ -1,0 +1,48 @@
+﻿@page "/departments/details"
+@using Microsoft.EntityFrameworkCore
+@using DjangoModelAdmin.Model
+@using DjangoModelAdmin.Data
+@inject ApplicationDbContext context
+@inject NavigationManager NavigationManager
+
+<PageTitle>Details</PageTitle>
+
+<h1>Details</h1>
+
+<div>
+    <h2>Departments</h2>
+    <hr />
+    @if (departments is null)
+    {
+        <p><em>Loading...</em></p>
+    }
+    else {
+        <dl class="row">
+            <dt class="col-sm-2">dep_name</dt>
+            <dd class="col-sm-10">@departments.dep_name</dd>
+            <dt class="col-sm-2">dep_description</dt>
+            <dd class="col-sm-10">@departments.dep_description</dd>
+        </dl>
+        <div>
+            <a href="@($"/departments/edit?dep_id={departments.dep_id}")">Edit</a> |
+            <a href="@($"/departments")">Back to List</a>
+        </div>
+    }
+</div>
+
+@code {
+    private Departments? departments;
+
+    [SupplyParameterFromQuery]
+    private int dep_id { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        departments = await context.Departments.FirstOrDefaultAsync(m => m.dep_id == dep_id);
+
+        if (departments is null)
+        {
+            NavigationManager.NavigateTo("notfound");
+        }
+    }
+}

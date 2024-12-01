@@ -1,0 +1,144 @@
+﻿@page "/doctors/edit"
+@using Microsoft.EntityFrameworkCore
+@using DjangoModelAdmin.Model
+@using DjangoModelAdmin.Data
+@inject ApplicationDbContext context
+@inject NavigationManager NavigationManager
+@rendermode InteractiveServer
+<PageTitle>Edit</PageTitle>
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            @if (doctors is null)
+            {
+                <div class="text-center">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2"><em>Loading...</em></p>
+                </div>
+            }
+            else
+            {
+                <div class="card shadow-sm">
+                    <div class="card-header bg-warning text-dark">
+                        <h3 class="mb-0">Edit Doctor</h3>
+                    </div>
+                    <div class="card-body">
+                        <EditForm method="post" Model="doctors" OnValidSubmit="UpdateDoctors" FormName="edit" Enhance>
+                            <DataAnnotationsValidator />
+                            <ValidationSummary role="alert" class="text-danger mb-3" />
+                            <input type="hidden" name="doctors.doc_id" value="@doctors.doc_id" />
+
+                            <div class="form-floating mb-4">
+                                <InputText id="doc_name" @bind-Value="doctors.doc_name" class="form-control" placeholder="Doctor Name" />
+                                <label for="doc_name">Doctor Name</label>
+                                <ValidationMessage For="() => doctors.doc_name" class="text-danger mt-1" />
+                            </div>
+
+                            <div class="form-floating mb-4">
+                                <InputText id="doc_spec" @bind-Value="doctors.doc_spec" class="form-control" placeholder="Specialization" />
+                                <label for="doc_spec">Specialization</label>
+                                <ValidationMessage For="() => doctors.doc_spec" class="text-danger mt-1" />
+                            </div>
+
+                            <div class="form-floating mb-4">
+                                <InputSelect id="dep_id" @bind-Value="doctors.dep_id" class="form-select">
+                                    <option value="">Select a Department</option>
+                                    @foreach (var department in departments)
+                                    {
+                                        <option value="@department.dep_id">@department.dep_name</option>
+                                    }
+                                </InputSelect>
+                                <label for="dep_id">Department</label>
+                                <ValidationMessage For="() => doctors.dep_id" class="text-danger mt-1" />
+                            </div>
+
+                            <div class="mb-4">
+                                <label for="doc_image" class="form-label">Doctor Image:</label>
+                                <InputFile id="doc_image" OnChange="HandleFileSelected" class="form-control" MaxFileSize="10485760" />
+                                <ValidationMessage For="() => doctors.doc_image" class="text-danger mt-1" />
+                            </div>
+
+                            <button type="submit" class="btn btn-warning w-100">Save</button>
+                        </EditForm>
+                    </div>
+                    <div class="card-footer text-center">
+                        <a href="/doctors" class="btn btn-link">Back to List</a>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+
+@code {
+    [SupplyParameterFromQuery]
+    private int doc_id { get; set; }
+
+    [SupplyParameterFromForm]
+    private Doctors? doctors { get; set; }
+
+    private List<Departments> departments = new();
+    private string imageFilePath;
+
+    protected override async Task OnInitializedAsync()
+    {
+        departments = await context.Departments.ToListAsync();
+        doctors ??= await context.Doctors.FirstOrDefaultAsync(m => m.doc_id == doc_id);
+
+        if (doctors is null)
+        {
+            NavigationManager.NavigateTo("notfound");
+        }
+    }
+    private async Task HandleFileSelected(InputFileChangeEventArgs e)
+    {
+        var file = e.File;
+        var fileName = Path.GetFileName(file.Name);
+        var filePath = Path.Combine("wwwroot", "images", fileName);
+
+        using (var stream = file.OpenReadStream())
+        {
+            using (var fileStream = new FileStream(filePath, FileMode.Create))
+            {
+                await stream.CopyToAsync(fileStream);
+            }
+        }
+
+        imageFilePath = $"/images/{fileName}";
+    }
+
+    // To protect from overposting attacks, enable the specific properties you want to bind to.
+    // For more information, see https://learn.microsoft.com/aspnet/core/blazor/forms/#mitigate-overposting-attacks.
+    private async Task UpdateDoctors()
+    {
+        doctors.doc_image = imageFilePath;
+        context.Attach(doctors!).State = EntityState.Modified;
+
+        try
+        {
+            await context.SaveChangesAsync();
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            if (!DoctorsExists(doctors!.doc_id))
+            {
+                NavigationManager.NavigateTo("notfound");
+            }
+            else
+            {
+                throw;
+            }
+        }
+
+        NavigationManager.NavigateTo("/doctors");
+    }
+
+    private bool DoctorsExists(int doc_id)
+    {
+        return context.Doctors.Any(e => e.doc_id == doc_id);
+    }
+}

@@ -1,0 +1,38 @@
+﻿@page "/doctor"
+@using Layout
+@using Microsoft.EntityFrameworkCore
+@using DjangoModelAdmin.Model
+@using DjangoModelAdmin.Data
+@layout UserLayout
+@inject ApplicationDbContext context
+
+<h1 class="text-center">Our Doctors</h1>
+<hr />
+
+<div class="container text-center bg-light">
+    @foreach (var item in doctors)
+    {
+        <div class="card text-center mx-3 my-3" style="width: 18rem; display:inline-block">
+            <img src=@item.doc_image class="card-img-top" alt="...">
+        <div class="card-body">
+            <h5 class="card-title">Dr. @item.doc_name</h5>
+            <p class="card-text">@item.doc_spec</p>
+            <h6>@item.Department.dep_name Department</h6>
+        </div>
+    </div>
+    }
+</div>
+@code {
+    private List<Doctors> doctors=new();
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDoctors();
+    }
+
+    private async Task LoadDoctors()
+    {
+        doctors = await context.Doctors
+            .Include(d => d.Department)
+            .ToListAsync();
+    }
+}

@@ -1,0 +1,112 @@
+﻿@page "/bookings/edit"
+@using Microsoft.EntityFrameworkCore
+@using DjangoModelAdmin.Model
+@using DjangoModelAdmin.Data
+@inject ApplicationDbContext context
+@inject NavigationManager NavigationManager
+
+<PageTitle>Edit</PageTitle>
+
+<h1>Edit</h1>
+
+<h2>Bookings</h2>
+<hr />
+@if (Bookings is null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <div class="row">
+        <div class="col-md-4">
+            <EditForm method="post" Model="Bookings" OnValidSubmit="UpdateBookings" FormName="edit" Enhance>
+                <DataAnnotationsValidator />
+                <ValidationSummary role="alert"/>
+                <input type="hidden" name="Bookings.booking_id" value="@Bookings.booking_id" />
+                <div class="mb-3">
+                    <label for="p_name" class="form-label">p_name:</label>
+                    <InputText id="p_name" @bind-Value="Bookings.p_name" class="form-control" />
+                    <ValidationMessage For="() => Bookings.p_name" class="text-danger" />
+                </div>
+                <div class="mb-3">
+                    <label for="p_phone" class="form-label">p_phone:</label>
+                    <InputText id="p_phone" @bind-Value="Bookings.p_phone" class="form-control" />
+                    <ValidationMessage For="() => Bookings.p_phone" class="text-danger" />
+                </div>
+                <div class="mb-3">
+                    <label for="p_email" class="form-label">p_email:</label>
+                    <InputText id="p_email" @bind-Value="Bookings.p_email" class="form-control" />
+                    <ValidationMessage For="() => Bookings.p_email" class="text-danger" />
+                </div>
+                <div class="mb-3">
+                    <label for="booking_date" class="form-label">booking_date:</label>
+                    <InputDate id="booking_date" @bind-Value="Bookings.booking_date" class="form-control" />
+                    <ValidationMessage For="() => Bookings.booking_date" class="text-danger" />
+                </div>
+                <div class="mb-3">
+                    <label for="booked_on" class="form-label">booked_on:</label>
+                    <InputDate id="booked_on" @bind-Value="Bookings.booked_on" class="form-control" />
+                    <ValidationMessage For="() => Bookings.booked_on" class="text-danger" />
+                </div>
+                <div class="mb-3">
+                    <label for="doc_id" class="form-label">doc_id:</label>
+                    <InputNumber id="doc_id" @bind-Value="Bookings.doc_id" class="form-control" />
+                    <ValidationMessage For="() => Bookings.doc_id" class="text-danger" />
+                </div>
+                <button type="submit" class="btn btn-primary">Save</button>
+            </EditForm>
+        </div>
+    </div>
+}
+
+<div>
+    <a href="/bookings">Back to List</a>
+</div>
+
+@code {
+    [SupplyParameterFromQuery]
+    private int booking_id { get; set; }
+
+    [SupplyParameterFromForm]
+    private Bookings? Bookings { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        Bookings ??= await context.Bookings.FirstOrDefaultAsync(m => m.booking_id == booking_id);
+
+        if (Bookings is null)
+        {
+            NavigationManager.NavigateTo("notfound");
+        }
+    }
+
+    // To protect from overposting attacks, enable the specific properties you want to bind to.
+    // For more information, see https://learn.microsoft.com/aspnet/core/blazor/forms/#mitigate-overposting-attacks.
+    private async Task UpdateBookings()
+    {
+        context.Attach(Bookings!).State = EntityState.Modified;
+
+        try
+        {
+            await context.SaveChangesAsync();
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            if (!BookingsExists(Bookings!.booking_id))
+            {
+                NavigationManager.NavigateTo("notfound");
+            }
+            else
+            {
+                throw;
+            }
+        }
+
+        NavigationManager.NavigateTo("/bookings");
+    }
+
+    private bool BookingsExists(int booking_id)
+    {
+        return context.Bookings.Any(e => e.booking_id == booking_id);
+    }
+}

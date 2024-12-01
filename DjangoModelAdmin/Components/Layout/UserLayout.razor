@@ -1,0 +1,28 @@
+﻿@inherits LayoutComponentBase
+
+<div class="page">
+    <div class="sidebar">
+        <UserNavmenu />
+    </div>
+
+    <main>
+        <article class="content px-4">
+            @Body
+        </article>
+    </main>
+
+    <section class="fixed-bottom">
+        <footer class="pt-2 pb-2  bg-primary text-light">
+            <div class="container">
+                <div class="row align-items-center">
+                    <div class="col-12 col-md-8">
+                        <h4>Emergency Contact Number: 0123456789</h4>
+                    </div>
+                    <div class="col-12 col-md-4 mt-4 mt-md-0 text-center text-md-end">
+                        © @DateTime.Now.Year City Hospital. All Rights Reserved
+                    </div>
+                </div>
+            </div>
+        </footer>
+    </section>
+</div>

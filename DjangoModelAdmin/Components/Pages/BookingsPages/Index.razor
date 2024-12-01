@@ -1,0 +1,31 @@
+﻿@page "/bookings"
+@using Microsoft.EntityFrameworkCore
+@using Microsoft.AspNetCore.Components.QuickGrid
+@using DjangoModelAdmin.Model
+@using DjangoModelAdmin.Data
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
+@inject ApplicationDbContext context
+<PageTitle>Index</PageTitle>
+
+<h1>Index</h1>
+
+<p>
+    <a href="bookings/create">Create New</a>
+</p>
+
+<QuickGrid Class="table" Items="context.Bookings">
+    <PropertyColumn Property="bookings => bookings.p_name" />
+    <PropertyColumn Property="bookings => bookings.p_phone" />
+    <PropertyColumn Property="bookings => bookings.p_email" />
+    <PropertyColumn Property="bookings => bookings.booking_date" />
+    <PropertyColumn Property="bookings => bookings.booked_on" />
+    <PropertyColumn Property="bookings => bookings.doc_id" />
+
+    <TemplateColumn Context="bookings">
+        <a href="@($"bookings/edit?booking_id={bookings.booking_id}")">Edit</a> |
+        <a href="@($"bookings/details?booking_id={bookings.booking_id}")">Details</a> |
+        <a href="@($"bookings/delete?booking_id={bookings.booking_id}")">Delete</a>
+    </TemplateColumn>
+</QuickGrid>
+

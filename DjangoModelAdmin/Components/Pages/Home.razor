@@ -1,0 +1,220 @@
+﻿@page "/home"
+@using DjangoModelAdmin.Data
+@using Microsoft.AspNetCore.Identity
+@using System.ComponentModel.DataAnnotations
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
+@inject RoleManager<IdentityRole> RoleManager
+@inject UserManager<ApplicationUser> UserManager
+@inject NavigationManager NavigationManager
+@rendermode InteractiveServer
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+@if(isUserAuthorized)
+{
+    <h3>Manage Application Users</h3>
+
+    <hr />
+    @if (users == null)
+    {
+        <p>Loading...</p>
+    }
+    else
+    {
+        <button class="btn btn-primary mb-3" @onclick="ShowAddUserForm">Add New User</button>
+
+        @if (showAddUserForm)
+        {
+            <EditForm Model="newUser" OnValidSubmit="AddUserAsync">
+                <DataAnnotationsValidator />
+                <div class="form-floating mb-3">
+                    <InputText @bind-Value="newUser.UserName" class="form-control" placeholder="Email" />
+                    <label>User Name</label>
+                </div>
+                <div class="form-floating mb-3">
+                    <InputText @bind-Value="newUser.Email" class="form-control" placeholder="Email" />
+                    <label>Email</label>
+                </div>
+                <div class="form-floating mb-3">
+                    <InputText @bind-Value="newUser.Password" type="password" class="form-control" placeholder="Password" />
+                    <label>Password</label>
+                </div>
+                <div class="form-floating mb-4">
+                    <InputSelect id="Roles" @bind-Value="newUser.Roles" class="form-select">
+                        <option value="">Select a Role</option>
+                        @foreach (var item in roles)
+                        {
+                            <option value="@item">@item</option>
+                        }
+                    </InputSelect>
+                    <label for="Roles">Role</label>
+                    <ValidationMessage For="() => newUser.Roles" class="text-danger mt-1" />
+                </div>
+                <button class="btn btn-success" type="submit">Save</button>
+                <button class="btn btn-secondary" @onclick="CancelAddUserForm">Cancel</button>
+            </EditForm>
+        }
+
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>User Name</th>
+                    <th>Email</th>
+                    <th>Role</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var user in users)
+                {
+                    <tr>
+                        <td>@user.UserName</td>
+                        <td>@user.Email</td>
+                        <td>@user.Roles</td>
+                        <td>
+                            <button class="btn btn-danger btn-sm" @onclick="() => DeleteUserAsync(user.Id)">Delete</button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+    @if (!string.IsNullOrEmpty(statusMessage))
+    {
+        <div class="alert alert-info">@statusMessage</div>
+    }
+}
+else
+{
+    <h1 class="text-center">Welcom @UserName</h1>
+    <hr />
+}
+
+@code {
+    private string UserName;
+    private bool isUserAuthorized;
+    List<string> roles = new();
+    private List<IdentityUserInputModel> users=new();
+    private IdentityUserInputModel newUser = new IdentityUserInputModel();
+    private bool showAddUserForm = false;
+    private string statusMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadUsersWithRolesAsync();
+        roles = ["Admin", "User"];
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        UserName = user.Identity.Name;
+        // Check if the user is authenticated and has a specific role
+        isUserAuthorized = user.IsInRole("Admin");
+    }
+
+    private async Task LoadUsersWithRolesAsync()
+    {
+        users.Clear();
+        var usersList = UserManager.Users.ToList();
+
+        foreach (var user in usersList)
+        {
+            var entRoles = await UserManager.GetRolesAsync(user);
+            users.Add(new IdentityUserInputModel
+                {
+                    Id = user.Id,
+                    UserName = user.UserName,
+                    Email = user.Email,
+                    Roles = entRoles.ToList().FirstOrDefault()
+                });
+        }
+    }
+
+    private void ShowAddUserForm()
+    {
+        showAddUserForm = true;
+    }
+
+    private void CancelAddUserForm()
+    {
+        showAddUserForm = false;
+        newUser = new IdentityUserInputModel(); // Reset form
+    }
+    private async Task AddUserAsync()
+    {
+        // Step 1: Check if the role exists, if not, create it
+        if (!await RoleManager.RoleExistsAsync(newUser.Roles))
+        {
+            var roleResult = await RoleManager.CreateAsync(new IdentityRole(newUser.Roles));
+            if (!roleResult.Succeeded)
+            {
+                statusMessage = $"Failed to create role: {string.Join(", ", roleResult.Errors.Select(e => e.Description))}";
+                return;
+            }
+        }
+
+        // Step 2: Check if the user already exists
+        var existingUser = await UserManager.FindByEmailAsync(newUser.Email);
+        if (existingUser != null)
+        {
+            statusMessage = "User already exists.";
+            return;
+        }
+
+        // Step 3: Create the user
+        var user = new ApplicationUser { UserName = newUser.UserName, Email = newUser.Email, EmailConfirmed=true };
+        var userResult = await UserManager.CreateAsync(user, newUser.Password);
+        if (!userResult.Succeeded)
+        {
+            statusMessage = $"Failed to create user: {string.Join(", ", userResult.Errors.Select(e => e.Description))}";
+            return;
+        }
+
+        // Step 4: Assign the user to the role
+        var roleAssignResult = await UserManager.AddToRoleAsync(user, newUser.Roles);
+        if (!roleAssignResult.Succeeded)
+        {
+            statusMessage = $"Failed to assign role: {string.Join(", ", roleAssignResult.Errors.Select(e => e.Description))}";
+        }
+        else
+        {
+            statusMessage =$"User '{newUser.Email}' created and assigned to role '{newUser.Roles}' successfully.";
+        }
+        showAddUserForm = false;
+        await LoadUsersWithRolesAsync();
+    }
+    private async Task DeleteUserAsync(string userId)
+    {
+        var user = await UserManager.FindByIdAsync(userId);
+        if (user != null)
+        {
+            var result = await UserManager.DeleteAsync(user);
+            if (result.Succeeded)
+            {
+                statusMessage = "User deleted successfully.";
+                await LoadUsersWithRolesAsync();
+            }
+            else
+            {
+                statusMessage = "Error: " + string.Join(", ", result.Errors.Select(e => e.Description));
+            }
+        }
+        else
+        {
+            statusMessage = "User not found.";
+        }
+    }
+
+    public class IdentityUserInputModel
+    {
+         public string Id { get; set; }
+        [Required]
+        public string UserName { get; set; }
+        [Required]
+        [EmailAddress]
+        public string Email { get; set; }
+        [Required]
+        [MinLength(6)]
+        public string Password { get; set; }
+        [Required]
+        public string Roles { get; set; }
+    }
+}

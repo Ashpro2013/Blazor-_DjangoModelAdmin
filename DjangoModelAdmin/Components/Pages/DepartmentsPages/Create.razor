@@ -1,0 +1,49 @@
+﻿@page "/departments/create"
+@using Microsoft.EntityFrameworkCore
+@using DjangoModelAdmin.Model
+@using DjangoModelAdmin.Data
+@inject ApplicationDbContext context
+@inject NavigationManager NavigationManager
+
+<PageTitle>Create</PageTitle>
+
+<h1>Create</h1>
+
+<h2>Departments</h2>
+<hr />
+<div class="row">
+    <div class="col-md-4">
+        <EditForm method="post" Model="departments" OnValidSubmit="AddDepartments" FormName="create" Enhance>
+            <DataAnnotationsValidator />
+            <ValidationSummary class="text-danger" role="alert"/>
+            <div class="mb-3">
+                <label for="dep_name" class="form-label">dep_name:</label> 
+                <InputText id="dep_name" @bind-Value="departments.dep_name" class="form-control" /> 
+                <ValidationMessage For="() => departments.dep_name" class="text-danger" /> 
+            </div>        
+            <div class="mb-3">
+                <label for="dep_description" class="form-label">dep_description:</label> 
+                <InputText id="dep_description" @bind-Value="departments.dep_description" class="form-control" /> 
+                <ValidationMessage For="() => departments.dep_description" class="text-danger" /> 
+            </div>        
+            <button type="submit" class="btn btn-primary">Create</button>
+        </EditForm>
+    </div>
+</div>
+
+<div>
+    <a href="/departments">Back to List</a>
+</div>
+
+@code {
+    [SupplyParameterFromForm]
+    private Departments departments { get; set; } = new();
+
+    // To protect from overposting attacks, see https://learn.microsoft.com/aspnet/core/blazor/forms/#mitigate-overposting-attacks.
+    private async Task AddDepartments()
+    {
+        context.Departments.Add(departments);
+        await context.SaveChangesAsync();
+        departments = new Departments();
+    }
+}

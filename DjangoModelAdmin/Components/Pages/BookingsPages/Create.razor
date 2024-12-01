@@ -1,0 +1,88 @@
+﻿@page "/bookings/create"
+@using Microsoft.EntityFrameworkCore
+@using DjangoModelAdmin.Model
+@using DjangoModelAdmin.Data
+@inject ApplicationDbContext context
+@inject NavigationManager NavigationManager
+
+<PageTitle>Create</PageTitle>
+
+
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="card-title mb-0">Create Booking</h5>
+            </div>
+            <div class="card-body">
+                <EditForm method="post" Model="Bookings" OnValidSubmit="AddBookings" FormName="create" Enhance>
+                    <DataAnnotationsValidator />
+                    <ValidationSummary class="text-danger" role="alert" />
+
+                    <div class="mb-3">
+                        <label for="p_name" class="form-label">Patient Name:</label>
+                        <InputText id="p_name" @bind-Value="Bookings.p_name" class="form-control" />
+                        <ValidationMessage For="() => Bookings.p_name" class="text-danger" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="p_phone" class="form-label">Phone No:</label>
+                        <InputText id="p_phone" @bind-Value="Bookings.p_phone" class="form-control" />
+                        <ValidationMessage For="() => Bookings.p_phone" class="text-danger" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="p_email" class="form-label">Email:</label>
+                        <InputText id="p_email" @bind-Value="Bookings.p_email" class="form-control" />
+                        <ValidationMessage For="() => Bookings.p_email" class="text-danger" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="booking_date" class="form-label">Booking Date:</label>
+                        <InputDate id="booking_date" @bind-Value="Bookings.booking_date" class="form-control" />
+                        <ValidationMessage For="() => Bookings.booking_date" class="text-danger" />
+                    </div>
+
+                    <div class="form-floating mb-4">
+                        <InputSelect id="doc_id" @bind-Value="Bookings.doc_id" class="form-select">
+                            <option value="">Select a Doctor</option>
+                            @foreach (var doctor in doctors)
+                            {
+                                <option value="@doctor.doc_id">@doctor.doc_name</option>
+                            }
+                        </InputSelect>
+                        <label for="doc_id">Doctor</label>
+                        <ValidationMessage For="() => Bookings.doc_id" class="text-danger mt-1" />
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">Create</button>
+                </EditForm>
+            </div>
+            <div class="card-footer text-center">
+                <a href="/bookings" class="btn btn-link">Back to List</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+@code {
+    [SupplyParameterFromForm]
+    private Bookings Bookings { get; set; } = new();
+    private List<Doctors> doctors = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        doctors = await context.Doctors.ToListAsync();
+        Bookings = new Bookings()
+            {
+                booking_date = DateTime.Now.Date
+            };
+    }
+    // To protect from overposting attacks, see https://learn.microsoft.com/aspnet/core/blazor/forms/#mitigate-overposting-attacks.
+    private async Task AddBookings()
+    {
+        context.Bookings.Add(Bookings);
+        await context.SaveChangesAsync();
+        NavigationManager.NavigateTo("/bookings");
+    }
+}

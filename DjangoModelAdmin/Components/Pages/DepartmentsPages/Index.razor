@@ -1,0 +1,28 @@
+﻿@page "/departments"
+@using Microsoft.EntityFrameworkCore
+@using Microsoft.AspNetCore.Components.QuickGrid
+@using DjangoModelAdmin.Model
+@using DjangoModelAdmin.Data
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
+@inject ApplicationDbContext context
+<PageTitle>Index</PageTitle>
+
+<h1>Index</h1>
+
+<p>
+    <a href="departments/create">Create New</a>
+</p>
+
+<QuickGrid Class="table" Items="context.Departments">
+    <PropertyColumn Property="departments => departments.dep_name" />
+    <PropertyColumn Property="departments => departments.dep_description" />
+
+    <TemplateColumn Context="departments">
+        <a href="@($"departments/edit?dep_id={departments.dep_id}")">Edit</a> |
+        <a href="@($"departments/details?dep_id={departments.dep_id}")">Details</a> |
+        <a href="@($"departments/delete?dep_id={departments.dep_id}")">Delete</a>
+    </TemplateColumn>
+</QuickGrid>
+
+

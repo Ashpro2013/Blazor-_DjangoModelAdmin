@@ -1,0 +1,108 @@
+﻿@page "/doctors/create"
+@using Microsoft.EntityFrameworkCore
+@using DjangoModelAdmin.Model
+@using DjangoModelAdmin.Data
+@inject ApplicationDbContext context
+@inject NavigationManager NavigationManager
+@rendermode InteractiveServer
+
+<PageTitle>Create</PageTitle>
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="mb-0">Create Doctor</h3>
+                </div>
+                <div class="card-body">
+                    <EditForm method="post" Model="doctors" OnValidSubmit="AddDoctors" FormName="create" Enhance>
+                        <DataAnnotationsValidator />
+                        <ValidationSummary class="text-danger mb-3" role="alert" />
+
+                        <div class="form-floating mb-4">
+                            <InputText id="doc_name" @bind-Value="doctors.doc_name" class="form-control" placeholder="Doctor Name" />
+                            <label for="doc_name">Doctor Name</label>
+                            <ValidationMessage For="() => doctors.doc_name" class="text-danger mt-1" />
+                        </div>
+
+                        <div class="form-floating mb-4">
+                            <InputText id="doc_spec" @bind-Value="doctors.doc_spec" class="form-control" placeholder="Specialization" />
+                            <label for="doc_spec">Specialization</label>
+                            <ValidationMessage For="() => doctors.doc_spec" class="text-danger mt-1" />
+                        </div>
+
+                        <div class="form-floating mb-4">
+                            <InputSelect id="dep_id" @bind-Value="doctors.dep_id" class="form-select">
+                                <option value="">Select a Department</option>
+                                @foreach (var department in departments)
+                                {
+                                    <option value="@department.dep_id">@department.dep_name</option>
+                                }
+                            </InputSelect>
+                            <label for="dep_id">Department</label>
+                            <ValidationMessage For="() => doctors.dep_id" class="text-danger mt-1" />
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="doc_image" class="form-label">Doctor Image:</label>
+                            <InputFile id="doc_image" OnChange="HandleFileSelected" class="form-control" MaxFileSize="10485760" />
+                            <ValidationMessage For="() => doctors.doc_image" class="text-danger mt-1" />
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100">Create</button>
+                    </EditForm>
+                </div>
+                <div class="card-footer text-center">
+                    <a href="/doctors" class="btn btn-link">Back to List</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+@code {
+    private Doctors doctors { get; set; } = new();
+    private List<Departments> departments = new();
+    private string imageFilePath;
+
+    protected override async Task OnInitializedAsync()
+    {
+        departments = await context.Departments.ToListAsync();
+    }
+
+    private async Task HandleFileSelected(InputFileChangeEventArgs e)
+    {
+        var file = e.File;
+        var fileName = Path.GetFileName(file.Name);
+        var filePath = Path.Combine("wwwroot", "images", fileName);
+
+        using (var stream = file.OpenReadStream())
+        {
+            using (var fileStream = new FileStream(filePath, FileMode.Create))
+            {
+                await stream.CopyToAsync(fileStream);
+            }
+        }
+
+        imageFilePath = $"/images/{fileName}";
+    }
+
+    private async Task AddDoctors()
+    {
+        try
+        {
+            doctors.doc_image = imageFilePath;
+            context.Doctors.Add(doctors);
+            await context.SaveChangesAsync();
+            doctors = new Doctors();
+        }
+        catch (Exception ex)
+        {
+            
+            throw ex;
+        }
+        
+    }
+}

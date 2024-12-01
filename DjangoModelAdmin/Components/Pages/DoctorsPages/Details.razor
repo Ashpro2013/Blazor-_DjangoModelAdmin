@@ -1,0 +1,52 @@
+﻿@page "/doctors/details"
+@using Microsoft.EntityFrameworkCore
+@using DjangoModelAdmin.Model
+@using DjangoModelAdmin.Data
+@inject ApplicationDbContext context
+@inject NavigationManager NavigationManager
+
+<PageTitle>Details</PageTitle>
+
+<h1>Details</h1>
+
+<div>
+    <h2>Doctors</h2>
+    <hr />
+    @if (doctors is null)
+    {
+        <p><em>Loading...</em></p>
+    }
+    else {
+        <dl class="row">
+            <dt class="col-sm-2">doc_name</dt>
+            <dd class="col-sm-10">@doctors.doc_name</dd>
+            <dt class="col-sm-2">doc_spec</dt>
+            <dd class="col-sm-10">@doctors.doc_spec</dd>
+            <dt class="col-sm-2">dep_id</dt>
+            <dd class="col-sm-10">@doctors.dep_id</dd>
+            <dt class="col-sm-2">doc_image</dt>
+            <dd class="col-sm-10">@doctors.doc_image</dd>
+        </dl>
+        <div>
+            <a href="@($"/doctors/edit?doc_id={doctors.doc_id}")">Edit</a> |
+            <a href="@($"/doctors")">Back to List</a>
+        </div>
+    }
+</div>
+
+@code {
+    private Doctors? doctors;
+
+    [SupplyParameterFromQuery]
+    private int doc_id { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        doctors = await context.Doctors.FirstOrDefaultAsync(m => m.doc_id == doc_id);
+
+        if (doctors is null)
+        {
+            NavigationManager.NavigateTo("notfound");
+        }
+    }
+}
